@@ -8,7 +8,7 @@
     <authors>René Larch</authors>
     <owners>René Larch</owners>
     <licenseUrl>https://github.com/r-Larch/IIS/blob/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/r-Larch/IIS</projectUrl>
+    <projectUrl>https://github.com/r-Larch/Larch</projectUrl>
     <projectSourceUrl>https://github.com/r-Larch/IIS</projectSourceUrl>
     <bugTrackerUrl>https://github.com/r-Larch/IIS/issues</bugTrackerUrl>
     <docsUrl>https://github.com/r-Larch/IIS</docsUrl>
@@ -33,12 +33,13 @@
     </releaseNotes>
 
     <dependencies>
-      <dependency id="Microsoft.Web.Administration" version="7.0.0"/>
+      <!--<dependency id="Microsoft.Web.Administration" version="7.0.0"/>-->
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\LarchConsole.dll" target="tools" />
-    <file src="bin\CommandLine.dll" target="tools" />
+    <file src="choco\VERIFICATION.txt" />
+    <file src="choco\LICENSE.txt" />
+    <file src="bin\*.dll" target="tools" />
     <file src="bin\iis.exe" target="tools" />
   </files>
 </package>

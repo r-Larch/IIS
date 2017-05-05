@@ -67,6 +67,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="choco\LICENSE.txt" />
+    <Content Include="choco\VERIFICATION.txt" />
     <Content Include="icon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
