@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<package>
+  <metadata>
+    <id>iis</id>
+    <version>1.0.0</version>
+    <title>IIS binding search tool CMD</title>
+    <authors>René Larch</authors>
+    <owners>René Larch</owners>
+    <licenseUrl>https://raw.githubusercontent.com/r-Larch/Larch.Host/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/r-Larch/Larch.Host</projectUrl>
+    <!--<packageSourceUrl>https://github.com/r-Larch/Larch.Host</packageSourceUrl>-->
+    <projectSourceUrl>https://github.com/r-Larch/Larch.Host</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/r-Larch/Larch.Host/issues</bugTrackerUrl>
+    <docsUrl>https://github.com/r-Larch/Larch.Host/wiki</docsUrl>
+    <!--<mailingListUrl>mailto:renelarch@gmail.com?Subject=pr:Larch.Host</mailingListUrl>-->
+    <iconUrl>https://raw.githubusercontent.com/r-Larch/Larch.Host/master/Larch.Host/icon.hosts.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Copyright 2017 René Larch</copyright>
+
+    <tags>iis binding filter search commandline CMD tool admin</tags>
+    <summary>commandline tool to search IIS sites and bindings</summary>
+    <description>commandline tool to find IIS sites witch are using https bindings or find IIS site by domain or by ip.</description>
+
+    <releaseNotes>
+      New: Filter by domain, ip or Id.
+      New: Use Wildcards or Regex to filter.
+      New: Colorized output for regex groubs.
+      New: Show all sites using one IP
+      New: Show all sites using https://
+      New: Show all https sites using Sni
+      New: Show all https sites using CentralCertStore
+      New: Show all https sites without special ssl flags
+      New: Debug option.
+    </releaseNotes>
+
+    <dependencies>
+      <dependency id="Microsoft.Web.Administration" version="7.0.0"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\LarchConsole.dll" target="tools" />
+    <file src="bin\CommandLine.dll" target="tools" />
+    <file src="bin\iis.exe" target="tools" />
+  </files>
+</package>
