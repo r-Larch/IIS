@@ -66,6 +66,9 @@
       <Name>LarchConsole</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="icon.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>call "$(SolutionDir)tools\chocopack.cmd" "$(ProjectDir)$(ProjectName).nuspec" "$(SolutionDir)dest"
