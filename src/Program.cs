@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using IIS.Controller;
 using IIS.Models;
 using LarchConsole;
@@ -7,6 +9,8 @@ using Microsoft.Web.Administration;
 
 namespace IIS {
     public class Program {
+        private IisController _iis;
+
         public static void Main(string[] args) {
             try {
                 var p = new Program();
@@ -32,32 +36,23 @@ namespace IIS {
 
         private void Run(Options options) {
             var iisManager = new ServerManager();
-            var iis = new IisController(iisManager);
+            _iis = new IisController(iisManager);
 
-            var filter = new Filter(options.Value,
-                options.Regex
-                    ? CampareType.Regex
-                    : CampareType.WildCard,
-                CompareMode.CaseIgnore
-                );
+            var iif = new IISFilter(iisManager, options.Regex) {
+                FilterBindings = options.UseBindingsView
+            };
+            var filtered = GetFiltered(options, iif)?.ToList();
 
-            var filterProp = GetFilterProp(options);
-
-            // list
-            if (
-                options.List ||
-                options.Site ||
-                options.Id ||
-                options.State ||
-                options.Ip ||
-                options.Https ||
-                options.Sni ||
-                options.CentralCertStore ||
-                options.HttpsNone
-                ) {
-                filter.OnEmptyMatchAll = true;
-                iis.List(filter, filterProp);
+            if (iif.HasResult) {
+                Display(filtered, options);
                 return;
+            }
+
+            // handle shordhand for "iis VALUE" = "iis -b VALUE"
+            if (!string.IsNullOrEmpty(options.Value)) {
+                options.Binding = options.Value;
+                iif.WhereBinding(options.ValueFilter);
+                Display(iif.Result.ToList(), options);
             }
 
             // handle empty value
@@ -67,40 +62,54 @@ namespace IIS {
             }
         }
 
-        private FilterProp GetFilterProp(Options options) {
-            if (options.Site) {
-                return FilterProp.Name;
+        private void Display(List<FilterSite> filtered, Options options) {
+            if (options.UseBindingsView) {
+                _iis.Bindings(filtered, options);
             }
-
-            if (options.Id) {
-                return FilterProp.Id;
+            else if (options.UseSitesView) {
+                _iis.Sites(filtered, options);
             }
-
-            if (options.State) {
-                return FilterProp.State;
+            else {
+                _iis.List(filtered, options);
             }
+        }
 
-            if (options.Ip) {
-                return FilterProp.Ip;
+        private IEnumerable<FilterSite> GetFiltered(Options options, IISFilter iif) {
+            using (new Watch("Filter")) {
+                iif.Condition = options.UseAndCondition ? FilterCondition.And : FilterCondition.Or;
+
+                // single filter
+                if (options.Id != null) {
+                    iif.WhereId(options.IdFilter);
+                }
+
+                // multi filter
+                if (options.Name.HasValue()) {
+                    iif.WhereName(options.NameFilter);
+                }
+                if (options.Binding.HasValue()) {
+                    iif.WhereBinding(options.BindingFilter);
+                }
+                if (options.State.HasValue()) {
+                    iif.WhereState(options.StateFilter);
+                }
+                if (options.Ip.HasValue()) {
+                    iif.WhereIp(options.IpFilter);
+                }
+
+                // search flags
+                if (options.Https) {
+                    iif.WhereHttps();
+                } else if (options.Sni) {
+                    iif.WhereSni();
+                } else if (options.CentralCertStore) {
+                    iif.WhereCentralCertStore();
+                } else if (options.HttpsNone) {
+                    iif.WhereHttpsNone();
+                }
+
+                return iif.Result;
             }
-
-            if (options.Https) {
-                return FilterProp.Https;
-            }
-
-            if (options.Sni) {
-                return FilterProp.Sni;
-            }
-
-            if (options.CentralCertStore) {
-                return FilterProp.CentralCertStore;
-            }
-
-            if (options.HttpsNone) {
-                return FilterProp.HttpsNone;
-            }
-
-            return FilterProp.Binding;
         }
     }
 }

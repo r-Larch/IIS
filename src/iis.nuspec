@@ -3,7 +3,7 @@
 <package>
   <metadata>
     <id>iis</id>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <title>IIS binding search tool CMD</title>
     <authors>René Larch</authors>
     <owners>René Larch</owners>
@@ -18,18 +18,62 @@
 
     <tags>iis binding filter search commandline CMD tool admin</tags>
     <summary>commandline tool to search IIS sites and bindings</summary>
-    <description>commandline tool to find IIS sites witch are using https bindings or find IIS site by domain or by ip.</description>
+    <description>
+commandline tool to find IIS sites witch are using https bindings or find IIS site by domain or by ip.
+      
+```
+Usage: iis [FILTER] [FLAGS]
+
+Copyright 2017 René Larch
+
+-i, --id         where id matchs VALUE
+
+-n, --name       where site name matchs VALUE
+-b, --binding    where binding matchs VALUE
+-s, --state      where state matchs VALUE
+--ip             where IP matchs VALUE
+
+--https          where sites using https://
+--sni            where https sites using Sni
+--central        where https sites using CentralCertStore
+--https-none     show all https sites without special ssl flags
+
+-A, --and        use AND contition
+-R, --regex      use regex for filter
+
+--bindings       use bindings view for print
+--sites          use sites view for print
+--debug          enables debuging
+--help           Display this help screen.
+
+
+list all
+iis *
+
+find https sites with top level domain .com
+iis --https -b *.com --and
+
+find all running sites where domain contains example
+iis -s started -b *example* --and
+
+find all subdomains
+iis -R -b ^(.*)\.(.*\..*)$ --bindings
+
+find all www domains and highlight them
+iis -R -b ^(www)\.(.*)
+
+change regex highlight color by double capture groups
+TRY:  iis -R -b (www)  THEN TRY: iis -R -b ((www))
+```
+    </description>
 
     <releaseNotes>
-      New: Filter by domain, ip or Id.
-      New: Use Wildcards or Regex to filter.
-      New: Colorized output for regex groubs.
-      New: Show all sites using one IP
-      New: Show all sites using https://
-      New: Show all https sites using Sni
-      New: Show all https sites using CentralCertStore
-      New: Show all https sites without special ssl flags
-      New: Debug option.
+      New: Filter by multiple properties.
+      New: Set filter merge condition: AND-condition or OR-condition.
+      New: Use three diffrent views to print your datas
+        * standart view (site infos + binding infos)
+        * binding view (site infos + binding infos in one row)
+        * site view (site infos + binding count in one row)
     </releaseNotes>
 
     <dependencies>

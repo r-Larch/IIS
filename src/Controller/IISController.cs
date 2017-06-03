@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using IIS.Models;
 using LarchConsole;
 using Microsoft.Web.Administration;
 
@@ -15,65 +16,86 @@ namespace IIS.Controller {
             _iisManager = iisManager;
         }
 
-        public void List(Filter filter, FilterProp what) {
-            var filterd = Filter(filter, what);
-
+        public void List(List<FilterSite> filterd, Options opt) {
             using (new Watch("print")) {
+                var protocolLan = filterd.Any() ? filterd.Max(x => x.Bindings.Max(b => b.Protocol.Length)) : 0;
+
                 ConsoleEx.PrintWithPaging(
                     list: filterd,
                     countAll: _iisManager.Sites.Count,
                     header: ConsoleWriter.CreateLine("   ID │"),
                     line: (x, i) => new ConsoleWriter()
                         .FormatLine("{id,5} │ {state,-9} {name}", p => p
-                            .Add("id", x.Id, what == FilterProp.Id)
-                            .Add("state", x.State, what == FilterProp.State)
-                            .Add("name", x.Name, what == FilterProp.Name)
+                            .Add("id", opt.IdFilter.GetMatch(x.Id), opt.Id.HasValue)
+                            .Add("state", opt.StateFilter.GetMatch(x.State), opt.State.HasValue())
+                            .Add("name", opt.NameFilter.GetMatch(x.Name), opt.Name.HasValue())
                         )
-                        .FormatLines("      │ {schema}: {protocol,-5} {ip}:{port,-4} {host} {ssl,20}", x.Bindings, (b, parms) => parms
-                            .Add("schema", b.Model.Schema.Name)
-                            .Add("ip", GetAddress(b.Model.EndPoint))
-                            .Add("port", GetPort(b.Model.EndPoint))
-                            .Add("host", b, what == FilterProp.Binding)
-                            .Add("protocol", b.Model.Protocol)
-                            .Add("ssl", GetSslString(b.Model.SslFlags()))
+                        .FormatLines("      │   {protocol,-" + protocolLan + "} {ssl} {ip}:{port,-4} {host}", x.Bindings, (b, parms) => parms
+                            //.Add("schema", b.Schema.Name)
+                            .Add("ip", opt.IpFilter.GetMatch(GetAddress(b.EndPoint)), opt.Ip.HasValue())
+                            .Add("port", GetPort(b.EndPoint))
+                            .Add("host", opt.BindingFilter.GetMatch(b.Host), opt.Binding.HasValue())
+                            .Add("protocol", b.Protocol)
+                            .Add("ssl", GetSslString(b.SslFlags()))
                         )
                         .WriteLine()
                     );
             }
         }
 
-        private IEnumerable<IisSite> Filter(Filter filter, FilterProp what) {
-            using (new Watch("filter")) {
-                var temp = _iisManager.Sites.Select(x => new IisSite() {
-                    Name = filter.GetMatch(x.Name),
-                    Id = filter.GetMatch(x.Id),
-                    State = filter.GetMatch(x.State),
-                    Bindings = x.Bindings.Select(_ => filter.GetMatch(_, binding => binding.Host)).ToList(),
-                });
+        public void Bindings(List<FilterSite> filterd, Options opt) {
+            using (new Watch("print")) {
+                var datas = filterd.SelectMany(x => x.Bindings.Select(b => new {
+                    x.Id,
+                    x.Name,
+                    x.State,
+                    b.Host,
+                    b.EndPoint,
+                    b.Protocol,
+                    SslFlags = b.SslFlags()
+                })).ToList();
+                var nameLan = filterd.Any() ? filterd.Max(x => x.Name.Length) : 0;
+                var protocolLan = datas.Any() ? datas.Max(x => x.Protocol.Length) : 0;
 
-                switch (what) {
-                    default:
-                    case FilterProp.Binding:
-                        return temp.Where(x => x.Bindings.Any(_ => _.IsSuccess));
-                    case FilterProp.Name:
-                        return temp.Where(x => x.Name.IsSuccess);
-                    case FilterProp.Id:
-                        return temp.Where(x => x.Id.IsSuccess);
-                    case FilterProp.State:
-                        return temp.Where(x => x.State.IsSuccess);
-                    case FilterProp.Ip:
-                        return temp.Where(x => x.Bindings.Any(_ => _.Model.EndPoint?.Address.ToString() == filter.Pattern));
-                    case FilterProp.Https:
-                        return temp.Where(x => x.Bindings.Any(_ => _.Model.Protocol == "https"));
-                    case FilterProp.Sni:
-                        return temp.Where(x => x.Bindings.Any(_ => (_.Model.SslFlags() & SslFlags.Sni) == SslFlags.Sni));
-                    case FilterProp.CentralCertStore:
-                        return temp.Where(x => x.Bindings.Any(_ => (_.Model.SslFlags() & SslFlags.CentralCertStore) == SslFlags.CentralCertStore));
-                    case FilterProp.HttpsNone:
-                        return temp.Where(x => x.Bindings.Any(_ => _.Model.Protocol == "https" && _.Model.SslFlags() == SslFlags.None));
-                }
+                ConsoleEx.PrintWithPaging(
+                    list: datas,
+                    countAll: _iisManager.Sites.Count,
+                    header: ConsoleWriter.CreateLine("   ID │"),
+                    line: (x, i) => new ConsoleWriter()
+                        .FormatLine("{id,5} │ {name,-" + nameLan + "} {protocol,-" + protocolLan + "} {ssl} {ip}:{port,-4} {host}", p => p
+                            .Add("id", opt.IdFilter.GetMatch(x.Id), opt.Id.HasValue)
+                            .Add("name", opt.NameFilter.GetMatch(x.Name), opt.Name.HasValue())
+                            .Add("ip", opt.IpFilter.GetMatch(GetAddress(x.EndPoint)), opt.Ip.HasValue())
+                            .Add("port", GetPort(x.EndPoint))
+                            .Add("host", opt.BindingFilter.GetMatch(x.Host), opt.Binding.HasValue())
+                            .Add("protocol", x.Protocol)
+                            .Add("ssl", GetSslString(x.SslFlags))
+                        )
+                    );
             }
         }
+
+        public void Sites(List<FilterSite> filterd, Options opt) {
+            using (new Watch("print")) {
+                var nameLan = filterd.Any() ? filterd.Max(x => x.Name.Length) : 0;
+
+                ConsoleEx.PrintWithPaging(
+                    list: filterd,
+                    countAll: _iisManager.Sites.Count,
+                    header: ConsoleWriter.CreateLine("   ID │"),
+                    line: (x, i) => new ConsoleWriter()
+                        .FormatLine("{id,5} │ {state,-9} {name,-" + nameLan + "} bindings: {bindins-count}", p => p
+                            .Add("id", opt.IdFilter.GetMatch(x.Id), opt.Id.HasValue)
+                            .Add("state", opt.StateFilter.GetMatch(x.State), opt.State.HasValue())
+                            .Add("name", opt.NameFilter.GetMatch(x.Name), opt.Name.HasValue())
+                            .Add("bindins-count", x.Bindings.Count)
+                        )
+                    );
+            }
+        }
+
+
+        #region private
 
         private string GetAddress(IPEndPoint endPoint) {
             if (endPoint == null) return "<null>";
@@ -103,13 +125,7 @@ namespace IIS.Controller {
 
             return sb.ToString();
         }
-    }
 
-
-    internal class IisSite {
-        public Match<string> Name { get; set; }
-        public Match<long> Id { get; set; }
-        public Match<ObjectState> State { get; set; }
-        public List<Match<Binding>> Bindings { get; set; }
+        #endregion
     }
 }

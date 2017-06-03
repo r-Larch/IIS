@@ -1,44 +1,79 @@
 ﻿using System.Text;
 using CommandLine;
 using CommandLine.Text;
+using LarchConsole;
 
 
 namespace IIS.Models {
-    internal class Options {
+    public class Options {
+        private Filter _value;
+        private Filter _id;
+        private Filter _name;
+        private Filter _binding;
+        private Filter _state;
+        private Filter _ip;
+
         [ValueOption(0)]
         public string Value { get; set; }
 
-        [Option('l', "list", HelpText = "List using wildcards or regex")]
-        public bool List { get; set; }
+        public Filter ValueFilter => _value ?? (_value = NewFilter(Value));
 
-        [Option('s', "site", HelpText = "Filter by site")]
-        public bool Site { get; set; }
+        // single filter
+        [Option('i', "id", HelpText = "where id matchs VALUE\n")]
+        public int? Id { get; set; }
 
-        [Option('i', "id", HelpText = "Filter by id")]
-        public bool Id { get; set; }
+        public Filter IdFilter => _id ?? (_id = NewFilter(Id?.ToString()));
 
-        [Option('t', "state", HelpText = "Filter by state")]
-        public bool State { get; set; }
+        // multi filter
+        [Option('n', "name", HelpText = "where site name matchs VALUE")]
+        public string Name { get; set; }
 
-        [Option("ip", HelpText = "Show all sites using this IP")]
-        public bool Ip { get; set; }
+        public Filter NameFilter => _name ?? (_name = NewFilter(Name));
 
-        [Option("https", HelpText = "Show all sites using https://")]
+        [Option('b', "binding", HelpText = "where binding matchs VALUE")]
+        public string Binding { get; set; }
+
+        public Filter BindingFilter => _binding ?? (_binding = NewFilter(Binding));
+
+        [Option('s', "state", HelpText = "where state matchs VALUE")]
+        public string State { get; set; }
+
+        public Filter StateFilter => _state ?? (_state = NewFilter(State));
+
+        [Option("ip", HelpText = "where IP matchs VALUE\n")]
+        public string Ip { get; set; }
+
+        public Filter IpFilter => _ip ?? (_ip = NewFilter(Ip));
+
+        // search flags
+        [Option("https", HelpText = "where sites using https://")]
         public bool Https { get; set; }
 
-        [Option("sni", HelpText = "Show all https sites using Sni")]
+        [Option("sni", HelpText = "where https sites using Sni")]
         public bool Sni { get; set; }
 
-        [Option("central", HelpText = "Show all https sites using CentralCertStore")]
+        [Option("central", HelpText = "where https sites using CentralCertStore")]
         public bool CentralCertStore { get; set; }
 
-        [Option("https-none", HelpText = "Show all https sites without special ssl flags")]
+        [Option("https-none", HelpText = "show all https sites without special ssl flags\n")]
         public bool HttpsNone { get; set; }
 
-        [Option('R', "regex", HelpText = "Use regex for filter")]
+        // match and matchsity
+        [Option('A', "and", HelpText = "use AND contition")]
+        public bool UseAndCondition { get; set; }
+
+        [Option('R', "regex", HelpText = "use regex for filter\n")]
         public bool Regex { get; set; }
 
-        [Option('d', "debug", HelpText = "Enables debuging")]
+        // views
+        [Option("bindings", HelpText = "use bindings view for print")]
+        public bool UseBindingsView { get; set; }
+
+        [Option("sites", HelpText = "use sites view for print")]
+        public bool UseSitesView { get; set; }
+
+        // extra
+        [Option("debug", HelpText = "enables debuging")]
         public bool Debug { get; set; }
 
         [ParserState]
@@ -47,18 +82,51 @@ namespace IIS.Models {
         [HelpOption]
         public string GetUsage() {
             var sb = new StringBuilder();
-            sb.AppendLine(" Usage: iis -l [FILTER] [FLAGS] PATTERN");
-
+            sb.AppendLine(" Usage: iis [FILTER] [FLAGS]");
+            //CommandLine.Text.
             var helpText = new HelpText() {
                 Heading = sb.ToString(),
                 AdditionalNewLineAfterOption = false,
                 AddDashesToOption = true,
-                Copyright = "Copyright 2017 René Larch"
+                Copyright = "Copyright 2017 René Larch",
+                MaximumDisplayWidth = int.MaxValue
             };
 
             helpText.AddOptions(this);
+            helpText.AddPostOptionsLine(new StringBuilder()
+                .AppendLine()
+                .AppendLine("  list all")
+                .AppendLine("   iis *")
+                .AppendLine()
+                .AppendLine("  find https sites with top level domain .com")
+                .AppendLine("   iis --https -b *.com --and")
+                .AppendLine()
+                .AppendLine("  find all running sites where domain contains example")
+                .AppendLine("   iis -s started -b *example* --and")
+                .AppendLine()
+                .AppendLine("  find all subdomains")
+                .AppendLine("   iis -R -b ^(.*)\\.(.*\\..*)$ --bindings")
+                .AppendLine()
+                .AppendLine("  find all www domains and highlight them")
+                .AppendLine("   iis -R -b ^(www)\\.(.*)")
+                .AppendLine()
+                .AppendLine("  change regex highlight color by double capture groups")
+                .AppendLine("   TRY:  iis -R -b (www)  THEN TRY: iis -R -b ((www))")
+                .ToString()
+                );
 
             return helpText;
+        }
+
+        private Filter NewFilter(string value) {
+            return new Filter(value,
+                Regex
+                    ? CampareType.Regex
+                    : CampareType.WildCard,
+                CompareMode.CaseIgnore
+                ) {
+                    OnEmptyMatchAll = true
+                };
         }
     }
 }
