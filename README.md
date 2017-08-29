@@ -68,7 +68,7 @@ Set-ExecutionPolicy $old
 
 
 #
-##### I wont to use Windows 10 PackageManager
+##### I want to use Windows 10 PackageManager
 Then run this:
 
 ```PowerShell
